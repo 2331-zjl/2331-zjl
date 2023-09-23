@@ -1,1 +1,79 @@
-
+#include <iostream>  
+#include <fstream>  
+#include <string>  
+#include <vector>  
+#include <algorithm>  
+#include <cmath>  
+  
+// 计算Levenshtein距离  
+int levenshteinDistance(const std::string& source, const std::string& target) {  
+    int m = source.size();  
+    int n = target.size();  
+    std::vector<std::vector<int>> dp(m + 1, std::vector<int>(n + 1, 0));  
+  
+    for (int i = 0; i <= m; ++i) {  
+        dp[i][0] = i;  
+    }  
+    for (int j = 0; j <= n; ++j) {  
+        dp[0][j] = j;  
+    }  
+  
+    for (int i = 1; i <= m; ++i) {  
+        for (int j = 1; j <= n; ++j) {  
+            if (source[i - 1] == target[j - 1]) {  
+                dp[i][j] = dp[i - 1][j - 1];  
+            } else {  
+                dp[i][j] = std::min({dp[i - 1][j], dp[i][j - 1], dp[i - 1][j - 1]}) + 1;  
+            }  
+        }  
+    }  
+  
+    return dp[m][n];  
+}  
+  
+int main(int argc, char** argv) {  
+    if (argc != 5) {  
+        std::cerr << "Usage: " << argv[0] << " original_file plagiarized_file output_file" << std::endl;  
+        return 1;  
+    }  
+  
+    std::string originalContent;  
+    std::string plagiarizedContent;  
+  
+    // 读取原文文件内容  
+    std::ifstream originalFile(argv[1]);  
+    if (originalFile.is_open()) {  
+        originalContent.assign(std::istreambuf_iterator<char>(originalFile), std::istreambuf_iterator<char>());  
+        originalFile.close();  
+    } else {  
+        std::cerr << "Failed to open original file: " << argv[1] << std::endl;  
+        return 1;  
+    }  
+  
+    // 读取抄袭版文件内容  
+    std::ifstream plagiarizedFile(argv[2]);  
+    if (plagiarizedFile.is_open()) {  
+        plagiarizedContent.assign(std::istreambuf_iterator<char>(plagiarizedFile), std::istreambuf_iterator<char>());  
+        plagiarizedFile.close();  
+    } else {  
+        std::cerr << "Failed to open plagiarized file: " << argv[2] << std::endl;  
+        return 1;  
+    }  
+  
+    // 计算重复率  
+    double similarityRatio = static_cast<double>(levenshteinDistance(originalContent, plagiarizedContent)) / std::max(originalContent.size(), plagiarizedContent.size());  
+    similarityRatio = 1.0 - similarityRatio;  // 转换为相似率，即1 - 编辑距离 / max(原文长度, 抄袭版长度)  
+    similarityRatio = std::round(similarityRatio * 100) / 100;  // 保留两位小数  
+  
+    // 将结果写入输出文件  
+    std::ofstream outputFile(argv[3]);  
+    if (outputFile.is_open()) {  
+        outputFile << similarityRatio;  
+        outputFile.close();  
+    } else {  
+        std::cerr << "Failed to open output file: " << argv[3] << std::endl;  
+        return 1;  
+    }  
+  
+    return 0;  
+}
